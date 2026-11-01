@@ -1,0 +1,508 @@
+:root {
+    --bg-main: #060a12;
+    --bg-panel: #0d1422;
+    --border-col: #1f3152;
+    --cyan: #38bdf8;
+    --gold: #fbbf24;
+    --green: #4ade80;
+    --red: #f87171;
+    --purple: #c084fc;
+    --text-main: #e2e8f0;
+    --text-muted: #94a3b8;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: radial-gradient(circle at 50% 0%, #0f1b33 0%, var(--bg-main) 75%);
+    color: var(--text-main);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 7px 11px;
+    gap: 6px;
+    user-select: none;
+}
+
+/* Overlay ao arrastar arquivo .WAV */
+body.drag-active::after {
+    content: '📂 SOLTE O ARQUIVO .WAV DO CARTÃO SD AQUI PARA ANALISAR';
+    position: fixed;
+    inset: 12px;
+    background: rgba(13, 20, 34, 0.92);
+    border: 3px dashed var(--cyan);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--cyan);
+    z-index: 9999;
+    letter-spacing: 1px;
+    box-shadow: 0 0 50px rgba(56, 189, 248, 0.3);
+}
+
+/* ================= 1. BARRA DE TOPO CIENTÍFICA ================= */
+.top-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(90deg, #0b1324 0%, #13203B 50%, #0b1324 100%);
+    border: 1px solid var(--border-col);
+    border-radius: 9px;
+    padding: 5px 14px;
+    height: 48px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+.brand-block {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.brand-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #0284c7, #1e3a8a);
+    border: 1px solid var(--cyan);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+}
+
+.brand-titles h1 {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: #f8fafc;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+}
+
+.brand-titles .subtitle {
+    font-size: 10.5px;
+    color: var(--text-muted);
+}
+
+.file-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(6, 10, 18, 0.7);
+    padding: 4px 12px;
+    border-radius: 8px;
+    border: 1px solid #1e293b;
+}
+
+.btn-load-wav {
+    background: linear-gradient(135deg, #0284c7, #0369a1);
+    color: #fff;
+    border: 1px solid var(--cyan);
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.btn-load-wav:hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+}
+
+.file-meta {
+    font-size: 11px;
+    color: #cbd5e1;
+    max-width: 370px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.author-badge {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.14), rgba(56, 189, 248, 0.12));
+    border: 1px solid rgba(251, 191, 36, 0.55);
+    padding: 4px 13px;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.15);
+}
+
+.author-badge .author-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #fde68a;
+    display: block;
+}
+
+.author-badge .author-name {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: var(--gold);
+    letter-spacing: 0.5px;
+}
+
+/* ================= 2. CARTÕES DE TELEMETRIA (5 COLUNAS) ================= */
+.telemetry-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 7px;
+    height: 52px;
+    flex-shrink: 0;
+}
+
+.metric-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-col);
+    border-radius: 8px;
+    padding: 5px 11px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.metric-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--cyan);
+}
+
+.metric-card.card-peak::before {
+    background: var(--gold);
+}
+
+.metric-card.card-infra::before {
+    background: var(--red);
+}
+
+.metric-card.card-ultra::before {
+    background: var(--purple);
+}
+
+.metric-card.card-class::before {
+    background: var(--green);
+}
+
+.metric-title {
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
+    margin-bottom: 1px;
+    white-space: nowrap;
+}
+
+.metric-val {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--cyan);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ================= 3. CONSOLE DE AUDIFICAÇÃO + BARRA DE REPRODUÇÃO ================= */
+.audio-workstation {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-col);
+    border-radius: 8px;
+    padding: 6px 12px;
+    flex-shrink: 0;
+}
+
+.console-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.audif-buttons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+}
+
+.console-title {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-right: 2px;
+    white-space: nowrap;
+}
+
+button.ctrl-btn {
+    background: #1e293b;
+    color: #f8fafc;
+    border: 1px solid #334155;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 11px;
+    transition: 0.15s;
+    white-space: nowrap;
+}
+
+button.ctrl-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    filter: brightness(1.15);
+}
+
+button.ctrl-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+button.ctrl-btn.active-mode {
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.55);
+    outline: 1.5px solid var(--gold);
+}
+
+.btn-orig {
+    background: #0369a1 !important;
+    border-color: #38bdf8 !important;
+}
+
+.btn-infra {
+    background: #991b1b !important;
+    border-color: #f87171 !important;
+}
+
+.btn-ultra {
+    background: #6b21a8 !important;
+    border-color: #c084fc !important;
+}
+
+.btn-dl {
+    background: #065f46 !important;
+    border-color: #34d399 !important;
+}
+
+.btn-stop {
+    background: #334155 !important;
+}
+
+/* Amplificador de Ganho Manual */
+.gain-module {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #080d18;
+    border: 1px solid #263859;
+    padding: 3px 9px;
+    border-radius: 7px;
+}
+
+.gain-title {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--gold);
+    white-space: nowrap;
+}
+
+.gain-slider {
+    width: 105px;
+    accent-color: var(--gold);
+    cursor: pointer;
+}
+
+.gain-readout {
+    font-family: 'Consolas', monospace;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--green);
+    background: #0f172a;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #334155;
+    min-width: 98px;
+    text-align: center;
+}
+
+.preset-btn {
+    background: #1e293b;
+    color: #cbd5e1;
+    border: 1px solid #334155;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.preset-btn:hover {
+    background: #334155;
+    color: #fff;
+}
+
+/* BARRA DE REPRODUÇÃO / LINHA DO TEMPO (SCRUBBER) */
+.scrubber-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #070b14;
+    border: 1px solid #1a2942;
+    border-radius: 6px;
+    padding: 4px 10px;
+}
+
+.btn-play-Point {
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    color: #04070d !important;
+    border: 1px solid #fde68a !important;
+    font-weight: 800 !important;
+    padding: 4px 12px !important;
+    min-width: 128px;
+}
+
+.btn-zero {
+    background: #1e293b !important;
+    padding: 4px 8px !important;
+    font-size: 10.5px !important;
+}
+
+.timeline-slider-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.timeline-slider {
+    flex: 1;
+    height: 6px;
+    accent-color: var(--gold);
+    cursor: pointer;
+}
+
+.time-counter {
+    font-family: 'Consolas', monospace;
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--gold);
+    background: #0f172a;
+    border: 1px solid #334155;
+    padding: 2px 8px;
+    border-radius: 4px;
+    min-width: 145px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.audio-status-pill {
+    font-size: 11px;
+    color: var(--cyan);
+    font-weight: 600;
+    max-width: 290px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ================= 4. GRADE TRIPLA DE TELAS CIENTÍFICAS ================= */
+.cockpit-grid {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: 50% 50%;
+    gap: 7px;
+}
+
+.bottom-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+    min-height: 0;
+}
+
+.screen-panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-col);
+    border-radius: 9px;
+    padding: 5px 10px 7px 10px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+    box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.45);
+}
+
+.screen-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    flex-shrink: 0;
+}
+
+.screen-title {
+    font-size: 11px;
+    font-weight: 800;
+    color: #cbd5e1;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.screen-badge {
+    font-size: 10px;
+    font-family: 'Consolas', monospace;
+    color: var(--gold);
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    padding: 1px 7px;
+    border-radius: 4px;
+}
+
+.canvas-wrap {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    position: relative;
+    background: #04070d;
+    border: 1px solid #162238;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+}

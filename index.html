@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Laboratório Acústico Científico — Autor: Robson Araujo</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ================= 1. BARRA SUPERIOR CIENTÍFICA ================= -->
+  <header class="top-header">
+    <div class="brand-block">
+      <div class="brand-icon">🔬</div>
+      <div class="brand-titles">
+        <h1>Laboratório Acústico Científico — Infrassom, Audível &amp; Ultrassom</h1>
+        <div class="subtitle">STM32F411CEU6 Black Pill + MEMS INMP441 (I2S 24-bit) • Espectro FFT 4096-pt &amp; Cursor de Reprodução nos Gráficos</div>
+      </div>
+    </div>
+
+    <div class="file-toolbar">
+      <input type="file" id="wavInput" accept=".wav" style="display:none">
+      <button class="btn-load-wav" onclick="document.getElementById('wavInput').click()">
+        📂 Carregar .WAV do SD
+      </button>
+      <div class="file-meta" id="fileInfo">Arraste um arquivo EVENT_XXXX.WAV para a tela ou clique no botão</div>
+    </div>
+
+    <div class="author-badge">
+      <div>
+        <span class="author-label">Projeto &amp; Autoria Científica</span>
+        <span class="author-name">👨‍🔬 Robson Araujo</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= 2. LINHA DE TELEMETRIA (5 INDICADORES) ================= -->
+  <section class="telemetry-row">
+    <div class="metric-card">
+      <div class="metric-title">Taxa de Amostragem / Nyquist</div>
+      <div class="metric-val" id="mRate">-- Hz</div>
+    </div>
+    <div class="metric-card card-peak">
+      <div class="metric-title">Frequência de Pico (Crista FFT)</div>
+      <div class="metric-val" id="mPeak" style="color:var(--gold);">-- Hz</div>
+    </div>
+    <div class="metric-card card-infra">
+      <div class="metric-title">Energia de Infrassom (&lt; 20 Hz)</div>
+      <div class="metric-val" id="mInfra" style="color:var(--red);">-- %</div>
+    </div>
+    <div class="metric-card card-ultra">
+      <div class="metric-title">Energia de Ultrassom (&gt; 11.5 kHz)</div>
+      <div class="metric-val" id="mUltra" style="color:var(--purple);">-- %</div>
+    </div>
+    <div class="metric-card card-class">
+      <div class="metric-title">Classificação Automática</div>
+      <div class="metric-val" id="mClass" style="color:var(--green);">Aguardando .WAV</div>
+    </div>
+  </section>
+
+  <!-- ================= 3. ESTAÇÃO DE AUDIFICAÇÃO + BARRA DE REPRODUÇÃO ================= -->
+  <section class="audio-workstation">
+    <!-- Linha Superior: Modos de Audificação + Ganho Manual -->
+    <div class="console-top-row">
+      <div class="audif-buttons">
+        <span class="console-title">🎧 Modo de Audificação:</span>
+        <button id="btnPlayOrig" class="ctrl-btn btn-orig active-mode" disabled onclick="selectAndPlayMode('orig')">
+          🔊 1. Original (1x)
+        </button>
+        <button id="btnPlayInfra" class="ctrl-btn btn-infra" disabled onclick="selectAndPlayMode('infra')">
+          🌋 2. Infrassom → Audível (25x)
+        </button>
+        <button id="btnPlayUltra" class="ctrl-btn btn-ultra" disabled onclick="selectAndPlayMode('ultra')">
+          🦇 3. Ultrassom → Audível (÷6x)
+        </button>
+        <button id="btnDownloadAudified" class="ctrl-btn btn-dl" disabled onclick="downloadLastAudifiedWav()">
+          💾 Baixar .WAV
+        </button>
+        <button id="btnStop" class="ctrl-btn btn-stop" disabled onclick="stopAudio(true)">
+          ⏹ Parar
+        </button>
+      </div>
+
+      <div class="gain-module">
+        <span class="gain-title">🎚️ Ganho Manual:</span>
+        <input type="range" id="gainSlider" class="gain-slider" min="0.5" max="30" step="0.5" value="5" oninput="updateManualGain(this.value)">
+        <span id="gainLabel" class="gain-readout">5.0x (+14.0 dB)</span>
+        <button class="preset-btn" onclick="setGainPreset(1)">1x</button>
+        <button class="preset-btn" onclick="setGainPreset(5)">5x</button>
+        <button class="preset-btn" onclick="setGainPreset(10)">10x</button>
+        <button class="preset-btn" onclick="setGainPreset(20)">20x</button>
+        <button class="preset-btn" onclick="setGainPreset(30)">30x</button>
+      </div>
+    </div>
+
+    <!-- Linha Inferior: Barra de Reprodução (Scrubber) para avançar/retroceder e tocar do ponto clicado -->
+    <div class="scrubber-row">
+      <button id="btnPlayFromCursor" class="ctrl-btn btn-play-Point" disabled onclick="togglePlayFromSelectedPoint()">
+        ▶️ Tocar Trecho
+      </button>
+      <button id="btnResetCursor" class="ctrl-btn btn-zero" disabled onclick="setSeekPosition(0, true)" title="Voltar agulha para 0.00s">
+        ⏮ 0.0s
+      </button>
+
+      <div class="timeline-slider-wrap">
+        <input type="range" id="timelineSlider" class="timeline-slider" min="0" max="1000" step="1" value="0" disabled oninput="onTimelineSliderInput(this.value)">
+      </div>
+
+      <div class="time-counter" id="timeCounter">Cursor: 0.00s / 0.00s</div>
+      <span class="audio-status-pill" id="audioStatus">Clique em qualquer ponto do gráfico ou arraste a barra para ouvir um trecho</span>
+    </div>
+  </section>
+
+  <!-- ================= 4. COCKPIT DE 3 TELAS SIMULTÂNEAS NA MESMA PÁGINA ================= -->
+  <main class="cockpit-grid">
+
+    <!-- TELA 1 (SUPERIOR LARGURA TOTAL): ESPECTRO FFT DE ALTA RESOLUÇÃO -->
+    <div class="screen-panel">
+      <div class="screen-header">
+        <div class="screen-title">
+          <span>📊 TELA 1 — Espectro FFT de Alta Resolução (0 Hz até Nyquist) com Rótulo no Pico da Onda</span>
+        </div>
+        <div class="screen-badge" id="fftCursorInfo">Passe o mouse no espectro para inspecionar qualquer frequência</div>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="cFft"></canvas>
+      </div>
+    </div>
+
+    <!-- TELAS 2 E 3 (INFERIOR DIVIDIDO LADO A LADO COM AGULHA DE REPRODUÇÃO CLICÁVEL) -->
+    <div class="bottom-split">
+
+      <!-- TELA 2 (INFERIOR ESQUERDA): OSCILOSCÓPIO NO TEMPO + ENVELOPE DE INFRASSOM -->
+      <div class="screen-panel">
+        <div class="screen-header">
+          <div class="screen-title">
+            <span>📈 TELA 2 — Osciloscópio no Tempo (Clique no gráfico para posicionar a agulha de áudio)</span>
+          </div>
+          <div class="screen-badge" id="timeInfoBadge">Clique na onda e aperte Play</div>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="cTime"></canvas>
+        </div>
+      </div>
+
+      <!-- TELA 3 (INFERIOR DIREITA): ESPECTROGRAMA WATERFALL TÉRMICO COMPLETO -->
+      <div class="screen-panel">
+        <div class="screen-header">
+          <div class="screen-title">
+            <span>🔥 TELA 3 — Espectrograma Waterfall (Clique em um pulso térmico para ouvir aquele trecho)</span>
+          </div>
+          <div class="screen-badge">Azul → Ciano → Amarelo → Vermelho</div>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="cWaterfall"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </main>
+  <script src="script.js"></script>
+
+</body>
+</html>
